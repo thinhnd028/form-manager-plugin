@@ -375,7 +375,7 @@ const EditSalesforceFormPage = () => {
                     width="100%"
                     minHeight="235px"
                     value={JSON.stringify(formData.fieldConfigs, null, 2)}
-                    onChange={(value) => setFormData(prev => ({ ...prev, fieldConfigs: JSON.parse(value) }))}
+                    onChange={(value: any) => setFormData(prev => ({ ...prev, fieldConfigs: JSON.parse(value) }))}
                   />
                   <Field.Error />
                   <Field.Hint />
