@@ -1,5 +1,4 @@
 {
-  "kind": "collectionType",
   "collectionName": "form_submissions",
   "info": {
     "singularName": "form-submission",

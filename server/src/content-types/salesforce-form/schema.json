@@ -1,5 +1,4 @@
 {
-  "kind": "collectionType",
   "collectionName": "salesforce_forms",
   "info": {
     "singularName": "salesforce-form",
