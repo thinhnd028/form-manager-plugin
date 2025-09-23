@@ -1,6 +1,9 @@
 {
+  "name": "form-manager-plugin",
   "version": "1.0.0",
+  "description": "",
   "keywords": [],
+  "license": "MIT",
   "type": "commonjs",
   "exports": {
     "./package.json": "./package.json",
@@ -58,22 +61,15 @@
     "react-router-dom": "^6.30.1",
     "styled-components": "^6.1.19"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orun028/form-manager-plugin.git"
+  },
+  "author": "thinh.nguyenduc <thinh.nguyenduc@umt.edu.vn>",
   "strapi": {
     "kind": "plugin",
     "name": "form-manager-plugin",
     "displayName": "Form Manager",
     "description": "Manage Salesforce form submissions"
-  },
-  "name": "form-manager-plugin",
-  "description": "",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/thinhnguyenduc/form-manager-plugin.git"
-  },
-  "bugs": {
-    "url": "https://github.com/thinhnguyenduc/form-manager-plugin/issues"
-  },
-  "homepage": "https://github.com/thinhnguyenduc/form-manager-plugin#readme",
-  "author": "thinh.nguyend <thinh.nguyenduc@umt.edu.vn>"
+  }
 }
