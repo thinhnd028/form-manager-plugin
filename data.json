@@ -1,0 +1,63 @@
+{
+  "id": 3,
+  "documentId": "pdzujvaq4r7taw6e0yq6ks9y",
+  "formName": "sign-up-form-1",
+  "endpointUrl": "",
+  "oid": "",
+  "retUrl": "",
+  "fieldMappings": {},
+  "fieldConfigs": [
+    {
+      "name": "fullName",
+      "type": "input",
+      "label": "Full Name",
+      "inputType": "text",
+      "validation": {
+        "required": true,
+        "minLength": 2
+      },
+      "placeholder": "Nhập họ và tên"
+    },
+    {
+      "name": "email",
+      "type": "input",
+      "label": "Email",
+      "inputType": "email",
+      "validation": {
+        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+        "required": true
+      },
+      "placeholder": "Nhập email"
+    },
+    {
+      "name": "phone",
+      "type": "input",
+      "label": "Phone",
+      "inputType": "tel",
+      "validation": {
+        "regex": "^[0-9]{9,11}$",
+        "required": true
+      },
+      "placeholder": "Nhập số điện thoại"
+    },
+    {
+      "name": "province",
+      "type": "select",
+      "label": "Province",
+      "validation": {
+        "required": true
+      },
+      "optionSource": {
+        "url": "/api/provinces",
+        "type": "api",
+        "labelField": "name",
+        "valueField": "code"
+      }
+    }
+  ],
+  "active": true,
+  "createdAt": "2025-09-23T03:41:28.316Z",
+  "updatedAt": "2025-09-23T04:00:15.280Z",
+  "publishedAt": "2025-09-23T03:41:28.311Z",
+  "locale": "vi"
+}

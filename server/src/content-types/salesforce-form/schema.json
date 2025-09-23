@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "salesforce_forms",
+  "info": {
+    "singularName": "salesforce-form",
+    "pluralName": "salesforce-forms",
+    "displayName": "Salesforce Forms",
+    "description": "Different Salesforce Form Handlers configurations"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "populateCreatorFields": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "formName": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "endpointUrl": {
+      "type": "string"
+    },
+    "oid": {
+      "type": "string"
+    },
+    "retUrl": {
+      "type": "string"
+    },
+    "fieldMappings": {
+      "type": "json"
+    },
+    "fieldConfigs": {
+      "type": "json",
+      "required": true
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "submissions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::form-manager-plugin.form-submission",
+      "mappedBy": "form"
+    }
+  }
+}

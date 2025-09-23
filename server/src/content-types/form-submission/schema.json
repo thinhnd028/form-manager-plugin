@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "form_submissions",
+  "info": {
+    "singularName": "form-submission",
+    "pluralName": "form-submissions",
+    "displayName": "Form Submissions",
+    "description": "Logs of all form submissions sent to Salesforce"
+  },
+  "attributes": {
+    "form": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::form-manager-plugin.salesforce-form",
+      "inversedBy": "submissions"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "json"
+    },
+    "salesforceResponse": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "success",
+        "error"
+      ],
+      "default": "pending"
+    },
+    "errorMessage": {
+      "type": "text"
+    }
+  }
+}
