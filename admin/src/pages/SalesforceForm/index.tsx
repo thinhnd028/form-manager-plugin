@@ -12,7 +12,7 @@ import {
   Th,
   Thead,
   Tr,
-  Typography,
+  Typography
 } from '@strapi/design-system';
 import { Pencil, Plus, Trash } from '@strapi/icons';
 import { useFetchClient } from '@strapi/strapi/admin';
@@ -20,20 +20,20 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocaleSelector } from '../../components/LocaleSelector';
 
-interface SalesforceForm {
+export interface SalesforceForm {
   id: number;
   formName: string;
   endpointUrl: string;
   oid: string;
   retUrl?: string;
-  fieldMappings: Record<string, string>;
+  fieldConfigs: { [key: string]: any }[];
   active: boolean;
   locale?: string;
 }
 
 export default function SalesforceForm() {
   const navigate = useNavigate();
-  const [forms, setForms] = useState<SalesforceForm[]>([]);
+  const [rows, setRows] = useState<SalesforceForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
@@ -51,10 +51,10 @@ export default function SalesforceForm() {
 
       const response = await get(`/form-manager-plugin/salesforce-forms?locale=${selectedLocale}`);
 
-      setForms(response.data.data || []);
+      setRows(response.data.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch salesforce forms');
-      setForms([]);
+      setRows([]);
     } finally {
       setLoading(false);
     }
@@ -72,13 +72,13 @@ export default function SalesforceForm() {
       setLoading(true);
       setError(null);
 
-      const filteredForms = forms.filter(form =>
+      const filteredForms = rows.filter(form =>
         form.formName.toLowerCase().includes(searchValue.toLowerCase()) ||
         form.endpointUrl.toLowerCase().includes(searchValue.toLowerCase()) ||
         form.oid.toLowerCase().includes(searchValue.toLowerCase())
       );
 
-      setForms(filteredForms);
+      setRows(filteredForms);
     } catch (err) {
       setError('Failed to search forms');
     } finally {
@@ -87,7 +87,7 @@ export default function SalesforceForm() {
   };
 
   const handleDelete = async (id: number) => {
-    const form = forms.find(f => f.id === id);
+    const form = rows.find(f => f.id === id);
     const formName = form?.formName || 'this form';
 
     if (!window.confirm(`Are you sure you want to delete "${formName}"? This action cannot be undone.`)) {
@@ -119,54 +119,69 @@ export default function SalesforceForm() {
 
   if (loading) {
     return (
-      <Box padding={8} margin={20}>
-        <Typography>Loading...</Typography>
-      </Box>
+      <Flex justifyContent="center" alignItems="center" padding={8}>
+        <Typography textColor="neutral600">Loading Salesforce forms...</Typography>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <Box padding={8} margin={20}>
-        <Typography textColor="danger600">Error: {error}</Typography>
-        <Button onClick={fetchForms} style={{ marginTop: 16 }}>
-          Retry
+      <Box padding={6} background="danger100" borderRadius="4px" style={{ border: '1px solid #f56565' }}>
+        <Typography textColor="danger600" fontWeight="semiBold" marginBottom={3}>
+          Error loading Salesforce forms
+        </Typography>
+        <Typography textColor="danger600" marginBottom={4}>
+          {error}
+        </Typography>
+        <Button onClick={fetchForms} variant="secondary">
+          Try Again
         </Button>
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Flex justifyContent="space-between" marginBottom={4}>
-        <SearchForm onSubmit={handleSearch}>
-          <Searchbar
-            size="S"
-            name="searchbar"
-            onClear={handleClearSearch}
-            value={searchValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearchValue(e.target.value)
-            }
-            clearLabel="Clearing the search"
-            placeholder="e.g: form name, endpoint URL, OID"
+    <>
+      <Flex justifyContent="space-between" wrap="wrap" gap={4} marginBottom={4}>
+        <Box flex="1" minWidth="200px" maxWidth="300px">
+          <SearchForm onSubmit={handleSearch}>
+            <Searchbar
+              size="S"
+              name="searchbar"
+              onClear={handleClearSearch}
+              value={searchValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearchValue(e.target.value)
+              }
+              clearLabel="Clear search"
+              placeholder="Search by form name, URL, or OID..."
+            >
+              Search Salesforce forms
+            </Searchbar>
+          </SearchForm>
+        </Box>
+        <Flex gap={4} alignItems="center" wrap="wrap">
+          <Box>
+            <LocaleSelector
+              onLocaleChange={handleLocaleChange}
+              currentLocale={selectedLocale}
+            />
+          </Box>
+          <Button
+            startIcon={<Plus />}
+            onClick={() => navigate('/plugins/form-manager-plugin/salesforce-form/create')}
           >
-            Searching for Salesforce forms
-          </Searchbar>
-        </SearchForm>
-        <Flex gap={2}>
-          <LocaleSelector
-            onLocaleChange={handleLocaleChange}
-            currentLocale={selectedLocale}
-          />
-          <Button startIcon={<Plus />} onClick={() => navigate('/plugins/form-manager-plugin/salesforce-form/create')}>
             Create New Form
           </Button>
         </Flex>
       </Flex>
-      <Table colCount={5} rowCount={forms.length}>
+      <Table colCount={5} rowCount={rows.length}>
         <Thead>
           <Tr>
+            <Th>
+              <Typography variant="sigma" textColor="neutral600">ID</Typography>
+            </Th>
             <Th>
               <Typography variant="sigma" textColor="neutral600">Form Name</Typography>
             </Th>
@@ -177,24 +192,30 @@ export default function SalesforceForm() {
               <Typography variant="sigma" textColor="neutral600">OID</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma" textColor="neutral600">Status</Typography>
+              <Typography variant="sigma" textColor="neutral600">Salesforce Active</Typography>
             </Th>
             <Th>
               <Typography variant="sigma" textColor="neutral600">Field Mappings</Typography>
             </Th>
             <Th>
-              <Flex justifyContent="flex-end">
-                <Typography variant="sigma" textColor="neutral600" textAlign="right">Actions</Typography>
-              </Flex>
+              <Typography variant="sigma" textColor="neutral600">Locale</Typography>
+            </Th>
+            <Th>
+              <Typography variant="sigma" textColor="neutral600" textAlign="right">Actions</Typography>
             </Th>
           </Tr>
         </Thead>
         <Tbody>
-          {forms.map((form) => (
-            <Tr key={form.id}>
+          {rows.map((row) => (
+            <Tr key={row.id}>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {form.formName}
+                  {row.id}
+                </Typography>
+              </Td>
+              <Td>
+                <Typography fontWeight="semiBold">
+                  {row.formName}
                 </Typography>
               </Td>
               <Td>
@@ -202,37 +223,48 @@ export default function SalesforceForm() {
                   textColor="neutral800"
                   style={{ wordBreak: 'break-all' }}
                 >
-                  {form.endpointUrl}
+                  {row.endpointUrl}
                 </Typography>
               </Td>
               <Td>
                 <Typography textColor="neutral800">
-                  {form.oid}
+                  {row.oid}
                 </Typography>
               </Td>
               <Td>
-                <Badge>
-                  {form.active ? 'Active' : 'Inactive'}
+                <Badge
+                  size='S'
+                  backgroundColor={row.active ? 'success100' : 'danger100'}
+                  textColor={row.active ? 'success600' : 'danger600'}
+                >
+                  {row.active ? 'Active' : 'Inactive'}
                 </Badge>
               </Td>
               <Td>
                 <Typography textColor="neutral800">
-                  {Object.keys(form.fieldMappings || {}).length} fields
+                  {Object.keys(row.fieldConfigs || {}).length} fields
+                </Typography>
+              </Td>
+              <Td>
+                <Typography textColor="neutral800">
+                  {row.locale}
                 </Typography>
               </Td>
               <Td>
                 <Flex gap={2} justifyContent="flex-end">
                   <IconButton
-                    label='Edit'
                     withTooltip={false}
-                    onClick={() => navigate(`/plugins/form-manager-plugin/salesforce-form/edit/${form.id}`)}
+                    label="Edit form"
+                    onClick={() => navigate(`/plugins/form-manager-plugin/salesforce-form/edit/${row.id}`)}
+                    variant="tertiary"
                   >
                     <Pencil />
                   </IconButton>
                   <IconButton
-                    label='Delete'
                     withTooltip={false}
-                    onClick={() => handleDelete(form.id)}
+                    label="Delete form"
+                    onClick={() => handleDelete(row.id)}
+                    variant="danger-light"
                   >
                     <Trash />
                   </IconButton>
@@ -242,6 +274,6 @@ export default function SalesforceForm() {
           ))}
         </Tbody>
       </Table>
-    </Box>
+    </>
   );
 }

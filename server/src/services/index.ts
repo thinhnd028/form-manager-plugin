@@ -1,9 +1,7 @@
-import service from './service';
-import salesforceForm from './salesforce-form';
 import formSubmission from './form-submission';
+import salesforceForm from './salesforce-form';
 
 export default {
-  service,
   'salesforce-form': salesforceForm,
   'form-submission': formSubmission,
 };

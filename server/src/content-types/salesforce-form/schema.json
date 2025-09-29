@@ -18,8 +18,10 @@
   "attributes": {
     "formName": {
       "type": "string",
-      "required": true,
-      "unique": true
+      "required": true
+    },
+    "formKey": {
+      "type": "string"
     },
     "endpointUrl": {
       "type": "string"
@@ -29,9 +31,6 @@
     },
     "retUrl": {
       "type": "string"
-    },
-    "fieldMappings": {
-      "type": "json"
     },
     "fieldConfigs": {
       "type": "json",

@@ -1,23 +1,33 @@
-import { Badge, Box, Button, Grid, Main, Typography } from '@strapi/design-system';
-import { ArrowLeft, Check, Clock } from '@strapi/icons';
+import { Badge, Box, Button, Flex, Grid, Link, Main, Typography } from '@strapi/design-system';
+import { ArrowLeft } from '@strapi/icons';
 import { useFetchClient } from '@strapi/strapi/admin';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { SalesforceForm } from './SalesforceForm';
 
-interface FormSubmission {
+export interface FormSubmission {
   id: number;
-  form: {
-    formName: string;
-    endpointUrl: string;
-    oid: string;
-  };
+  form: SalesforceForm;
   payload: Record<string, any>;
   salesforceResponse: Record<string, any>;
-  status: 'pending' | 'success' | 'error';
+  salesforceStatus: 'pending' | 'success' | 'error';
   errorMessage?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export const getStatusVariant = (status: string) => {
+  switch (status) {
+    case 'success':
+      return 'success';
+    case 'error':
+      return 'danger';
+    case 'pending':
+      return 'warning';
+    default:
+      return 'secondary';
+  }
+};
 
 const ViewFormSubmission = () => {
   const navigate = useNavigate();
@@ -42,12 +52,7 @@ const ViewFormSubmission = () => {
         const response = await get(`/form-manager-plugin/form-submissions/${id}`);
         setSubmission(response.data.data);
       } catch (err) {
-        console.error('Error fetching form submission:', err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to fetch form submission.'
-        );
+        setError(err instanceof Error ? err.message : 'Failed to fetch form submission.');
       } finally {
         setLoading(false);
       }
@@ -56,43 +61,15 @@ const ViewFormSubmission = () => {
     fetchSubmission();
   }, [id, get]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
-        return <Check color="success600" />;
-      case 'error':
-        return <Clock color="danger600" />;
-      case 'pending':
-        return <Clock color="warning600" />;
-      default:
-        return <Clock color="neutral600" />;
-    }
-  };
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
   if (loading) {
     return (
-      <Main padding={5}>
-        <Box paddingBottom={4} margin={20}>
-          <Typography variant="alpha">Loading Form Submission...</Typography>
-        </Box>
-      </Main>
+      <Flex justifyContent="center" alignItems="center" padding={8}>
+        <Typography textColor="neutral600">Loading form data...</Typography>
+      </Flex>
     );
   }
 
@@ -119,212 +96,190 @@ const ViewFormSubmission = () => {
   }
 
   return (
-    <Main padding={5}>
-      <Box paddingBottom={4} margin={20}>
-        <Box marginBottom={3}>
-          <Button
-            variant="tertiary"
-            startIcon={<ArrowLeft />}
-            onClick={() => navigate(-1)}
-            style={{ marginBottom: 16 }}
-          >
-            Back to Submissions
-          </Button>
-        </Box>
-
-        <Typography variant="alpha">Form Submission Details</Typography>
-        <Box>
-          <Typography variant="epsilon">
+    <>
+      <Flex direction="column" alignItems="start" marginBottom={4}>
+        <Link
+          href='/admin/plugins/form-manager-plugin'
+          startIcon={<ArrowLeft />}
+        >
+          <Typography variant="epsilon">Back</Typography>
+        </Link>
+        <Flex justifyContent={'space-between'} alignItems="center" width={'100%'}>
+          <Typography variant="alpha" textColor="neutral800">
             Submission ID: {submission.id}
           </Typography>
-        </Box>
-      </Box>
+        </Flex>
+      </Flex>
 
-      <Box padding={4}>
-        <Grid.Root gap={4}>
-          {/* Status and Basic Info */}
-          <Grid.Item col={12}>
-            <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem">
-              <Typography variant="beta" marginBottom={3}>
-                Status & Basic Information
-              </Typography>
+      <Grid.Root gap={4} gridCols={12}>
+        {/* Status and Basic Info */}
+        <Grid.Item col={12}>
+          <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem" style={{ width: '100%' }} >
+            <Typography variant="beta">
+              Status & Basic Information
+            </Typography>
 
-              <Grid.Root gap={4}>
-                <Grid.Item col={6}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Status
-                    </Typography>
-                    <Badge
-                      color={getStatusVariant(submission.status)}
-                    >
-                      {submission.status.toUpperCase()}
-                    </Badge>
-                  </Box>
-                </Grid.Item>
+            <Grid.Root gap={4} marginTop={4}>
+              <Grid.Item col={6}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Status
+                  </Typography>
+                  <Badge
+                    size='S'
+                    backgroundColor={getStatusVariant(submission.salesforceStatus) + '100'}
+                    textColor={getStatusVariant(submission.salesforceStatus) + '600'}
+                  >
+                    {submission.salesforceStatus.toUpperCase()}
+                  </Badge>
+                </Flex>
+              </Grid.Item>
 
-                <Grid.Item col={6}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Form Name
-                    </Typography>
-                    <Typography fontWeight="semiBold">
-                      {submission.form?.formName || 'N/A'}
-                    </Typography>
-                  </Box>
-                </Grid.Item>
+              <Grid.Item col={6}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Form Name
+                  </Typography>
+                  <Typography variant='omega'>
+                    {submission.form?.formName || 'N/A'}
+                  </Typography>
+                </Flex>
+              </Grid.Item>
 
-                <Grid.Item col={6}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Created At
-                    </Typography>
-                    <Typography>
-                      {formatDate(submission.createdAt)}
-                    </Typography>
-                  </Box>
-                </Grid.Item>
+              <Grid.Item col={6}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Created At
+                  </Typography>
+                  <Typography variant='omega'>
+                    {formatDate(submission.createdAt)}
+                  </Typography>
+                </Flex>
+              </Grid.Item>
 
-                <Grid.Item col={6}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Updated At
-                    </Typography>
-                    <Typography>
-                      {formatDate(submission.updatedAt)}
-                    </Typography>
-                  </Box>
-                </Grid.Item>
-              </Grid.Root>
-            </Box>
-          </Grid.Item>
+              <Grid.Item col={6}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Updated At
+                  </Typography>
+                  <Typography variant='omega'>
+                    {formatDate(submission.updatedAt)}
+                  </Typography>
+                </Flex>
+              </Grid.Item>
+            </Grid.Root>
+          </Box>
+        </Grid.Item>
 
-          {/* Form Configuration */}
-          <Grid.Item col={12}>
-            <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem">
-              <Typography variant="beta" marginBottom={3}>
-                Form Configuration
-              </Typography>
+        {/* Form Configuration */}
+        <Grid.Item col={12}>
+          <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem" style={{ width: '100%' }}>
+            <Typography variant="beta">
+              Form Configuration
+            </Typography>
 
-              <Grid.Root gap={4}>
-                <Grid.Item col={12}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Endpoint URL
-                    </Typography>
-                    <Typography
-                      style={{
-                        wordBreak: 'break-all',
-                        fontFamily: 'monospace',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      {submission.form?.endpointUrl || 'N/A'}
-                    </Typography>
-                  </Box>
-                </Grid.Item>
+            <Grid.Root gap={4} marginTop={4}>
+              <Grid.Item col={12}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Endpoint URL
+                  </Typography>
+                  <Typography variant='omega'>
+                    {submission.form?.endpointUrl || 'N/A'}
+                  </Typography>
+                </Flex>
+              </Grid.Item>
 
-                <Grid.Item col={6}>
-                  <Box marginBottom={2}>
-                    <Typography variant="pi" textColor="neutral600" marginBottom={1}>
-                      Organization ID (OID)
-                    </Typography>
-                    <Typography
-                      style={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      {submission.form?.oid || 'N/A'}
-                    </Typography>
-                  </Box>
-                </Grid.Item>
-              </Grid.Root>
-            </Box>
-          </Grid.Item>
+              <Grid.Item col={6}>
+                <Flex gap={2} alignItems="center">
+                  <Typography variant="pi" textColor="neutral600">
+                    Organization ID (OID)
+                  </Typography>
+                  <Typography variant='omega'>
+                    {submission.form?.oid || 'N/A'}
+                  </Typography>
+                </Flex>
+              </Grid.Item>
+            </Grid.Root>
+          </Box>
+        </Grid.Item>
 
-          {/* Form Payload */}
-          <Grid.Item col={12}>
-            <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem">
-              <Typography variant="beta" marginBottom={3}>
-                Form Payload
-              </Typography>
+        {/* Form Payload */}
+        <Grid.Item col={12}>
+          <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem" style={{ width: '100%' }}>
+            <Typography variant="beta">
+              Form Payload
+            </Typography>
 
-              <Box
-                background="neutral100"
-                padding={3}
-                borderRadius="0.25rem"
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  overflow: 'auto'
-                }}
-              >
+            <Box
+              marginTop={4}
+              background="neutral100"
+              padding={3}
+              borderRadius="0.25rem"
+            >
+              <Typography variant='omega'>
                 <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                   {JSON.stringify(submission.payload, null, 2)}
                 </pre>
-              </Box>
-            </Box>
-          </Grid.Item>
-
-          {/* Salesforce Response */}
-          <Grid.Item col={12}>
-            <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem">
-              <Typography variant="beta" marginBottom={3}>
-                Salesforce Response
               </Typography>
+            </Box>
+          </Box>
+        </Grid.Item>
 
-              <Box
-                background="neutral100"
-                padding={3}
-                borderRadius="0.25rem"
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  overflow: 'auto'
-                }}
-              >
+        {/* Salesforce Response */}
+        <Grid.Item col={12}>
+          <Box background="neutral0" padding={4} shadow="table" borderRadius="0.25rem" style={{ width: '100%' }}>
+            <Typography variant="beta">
+              Salesforce Response
+            </Typography>
+
+            <Box
+              marginTop={4}
+              background="neutral100"
+              padding={3}
+              borderRadius="0.25rem"
+            >
+              <Typography variant='omega'>
                 <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                   {JSON.stringify(submission.salesforceResponse, null, 2)}
                 </pre>
-              </Box>
+              </Typography>
             </Box>
-          </Grid.Item>
+          </Box>
+        </Grid.Item>
 
-          {/* Error Message (if any) */}
-          {submission.status === 'error' && submission.errorMessage && (
-            <Grid.Item col={12}>
+        {/* Error Message (if any) */}
+        {submission.salesforceStatus === 'error' && submission.errorMessage && (
+          <Grid.Item col={12}>
+            <Box
+              marginTop={4}
+              background="danger100"
+              padding={4}
+              shadow="table"
+              borderRadius="0.25rem"
+              borderColor="danger500"
+            >
+              <Typography variant="beta" textColor="danger600">
+                Error Details
+              </Typography>
+
               <Box
-                background="danger100"
-                padding={4}
-                shadow="table"
+                marginTop={4}
+                background="neutral0"
+                padding={3}
                 borderRadius="0.25rem"
-                borderColor="danger500"
               >
-                <Typography variant="beta" marginBottom={3} textColor="danger600">
-                  Error Details
-                </Typography>
-
-                <Box
-                  background="neutral0"
-                  padding={3}
-                  borderRadius="0.25rem"
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '0.875rem',
-                    overflow: 'auto'
-                  }}
-                >
+                <Typography variant='omega'>
                   <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                     {submission.errorMessage}
                   </pre>
-                </Box>
+                </Typography>
               </Box>
-            </Grid.Item>
-          )}
-        </Grid.Root>
-      </Box>
-    </Main>
+            </Box>
+          </Grid.Item>
+        )}
+      </Grid.Root>
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 {
   "name": "form-manager-plugin",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "keywords": [],
   "license": "MIT",
@@ -38,6 +38,7 @@
     "@strapi/icons": "^2.0.0-rc.29",
     "axios": "^1.12.2",
     "react-intl": "^7.1.11",
+    "uuid": "^13.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

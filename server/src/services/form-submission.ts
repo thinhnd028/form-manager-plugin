@@ -12,14 +12,14 @@ export default factories.createCoreService('plugin::form-manager-plugin.form-sub
       offset: params.start ?? 0,
       orderBy: params.orderBy ?? { createdAt: 'desc' },
     });
-  
+
     const total = await strapi.db.query('plugin::form-manager-plugin.form-submission').count({
       where: {
         ...params.where,
         // publishedAt: { $notNull: true },
       },
     });
-  
+
     return {
       results,
       pagination: {
@@ -47,6 +47,16 @@ export default factories.createCoreService('plugin::form-manager-plugin.form-sub
       data: {
         ...data,
         // publishedAt: new Date().toISOString()
+      }
+    });
+    return result;
+  },
+
+  async update(id, data) {
+    const result = await strapi.db.query('plugin::form-manager-plugin.form-submission').update({
+      where: { id: parseInt(id) },
+      data: {
+        ...data,
       }
     });
     return result;

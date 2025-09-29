@@ -12,13 +12,13 @@ import {
   Th,
   Thead,
   Tr,
-  Typography,
+  Typography
 } from '@strapi/design-system';
 import { Eye, Trash } from '@strapi/icons';
 import { useFetchClient } from '@strapi/strapi/admin';
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LocaleSelector } from '../../components/LocaleSelector';
+import { getStatusVariant } from '../ViewFormSubmission';
 
 interface FormSubmission {
   id: number;
@@ -29,7 +29,7 @@ interface FormSubmission {
   email: string;
   payload: Record<string, any>;
   salesforceResponse: Record<string, any>;
-  status: string;
+  salesforceStatus: string;
   errorMessage: string;
   createdAt: string;
   updatedAt: string;
@@ -43,22 +43,13 @@ export default function FormSubmission() {
   const [error, setError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const { get, del } = useFetchClient();
-  const [selectedLocale, setSelectedLocale] = useState<string>('');
-
-  const handleLocaleChange = (locale: string) => {
-    setSelectedLocale(locale);
-  };
 
   const fetchForms = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = selectedLocale
-        ? `/form-manager-plugin/form-submissions?locale=${selectedLocale}`
-        : '/form-manager-plugin/form-submissions';
-
-      const response = await get(url);
+      const response = await get(`/form-manager-plugin/form-submissions`);
 
       setRows(response.data.data || []);
     } catch (err) {
@@ -81,7 +72,6 @@ export default function FormSubmission() {
       setLoading(true);
       setError(null);
 
-      // Filter forms based on search value
       const filteredForms = rows.filter(form =>
         form?.form?.formName?.toLowerCase().includes(searchValue.toLowerCase())
       );
@@ -107,7 +97,7 @@ export default function FormSubmission() {
 
       await del(`/form-manager-plugin/form-submissions/${id}`);
 
-      await fetchForms(); // Refresh the list
+      await fetchForms();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete form submission');
     } finally {
@@ -122,49 +112,52 @@ export default function FormSubmission() {
 
   useEffect(() => {
     fetchForms();
-  }, [selectedLocale]);
+  }, []);
 
   if (loading) {
     return (
-      <Box padding={8} margin={20}>
-        <Typography>Loading...</Typography>
-      </Box>
+      <Flex justifyContent="center" alignItems="center" padding={8}>
+        <Typography textColor="neutral600">Loading form submissions...</Typography>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <Box padding={8} margin={20}>
-        <Typography textColor="danger600">Error: {error}</Typography>
-        <Button onClick={fetchForms} style={{ marginTop: 16 }}>
-          Retry
+      <Box padding={6} background="danger100" borderRadius="4px" style={{ border: '1px solid #f56565' }}>
+        <Typography textColor="danger600" fontWeight="semiBold" marginBottom={3}>
+          Error loading form submissions
+        </Typography>
+        <Typography textColor="danger600" marginBottom={4}>
+          {error}
+        </Typography>
+        <Button onClick={fetchForms} variant="secondary">
+          Try Again
         </Button>
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Flex justifyContent="space-between" marginBottom={4}>
-        <SearchForm onSubmit={handleSearch}>
-          <Searchbar
-            size="S"
-            name="searchbar"
-            onClear={handleClearSearch}
-            value={searchValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearchValue(e.target.value)
-            }
-            clearLabel="Clearing the search"
-            placeholder="e.g: form name"
-          >
-            Searching for form submissions
-          </Searchbar>
-        </SearchForm>
-        <LocaleSelector
-          onLocaleChange={handleLocaleChange}
-          currentLocale={selectedLocale}
-        />
+    <>
+      <Flex justifyContent="space-between" wrap="wrap" gap={4} marginBottom={4}>
+        <Box flex="1" minWidth="200px" maxWidth="300px">
+          <SearchForm onSubmit={handleSearch}>
+            <Searchbar
+              size="S"
+              name="searchbar"
+              onClear={handleClearSearch}
+              value={searchValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearchValue(e.target.value)
+              }
+              clearLabel="Clear search"
+              placeholder="Search by form name..."
+            >
+              Search form submissions
+            </Searchbar>
+          </SearchForm>
+        </Box>
       </Flex>
       <Table colCount={7} rowCount={rows.length}>
         <Thead>
@@ -182,10 +175,7 @@ export default function FormSubmission() {
               <Typography variant="sigma" textColor="neutral600">Email</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma" textColor="neutral600">Payload</Typography>
-            </Th>
-            <Th>
-              <Typography variant="sigma" textColor="neutral600">Status</Typography>
+              <Typography variant="sigma" textColor="neutral600"> Salesforce Status</Typography>
             </Th>
             <Th>
               <Typography variant="sigma" textColor="neutral600">Created At</Typography>
@@ -196,66 +186,57 @@ export default function FormSubmission() {
           </Tr>
         </Thead>
         <Tbody>
-          {rows.map((form) => (
-            <Tr key={form.id}>
+          {rows.map((row) => (
+            <Tr key={row.id}>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {form.id}
+                  {row.id}
                 </Typography>
               </Td>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {form?.form?.formName || 'N/A'}
+                  {row?.form?.formName || 'N/A'}
                 </Typography>
               </Td>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {form.fullName}
+                  {row.fullName}
                 </Typography>
               </Td>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {form.email}
+                  {row.email}
                 </Typography>
               </Td>
               <Td>
-                <Typography
-                  textColor="neutral800"
-                  style={{
-                    fontFamily: 'monospace',
-                    width: '300px',          // 👈 dùng width thay vì maxWidth
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'block',        // 👈 đảm bảo là block để text-overflow hoạt động
-                  }}
+                <Badge
+                  size='S'
+                  backgroundColor={getStatusVariant(row.salesforceStatus) + '100'}
+                  textColor={getStatusVariant(row.salesforceStatus) + '600'}
                 >
-                  {JSON.stringify(form.payload)}
-                </Typography>
-              </Td>
-              <Td>
-                <Badge>
-                  {form.status}
+                  {row.salesforceStatus.toUpperCase()}
                 </Badge>
               </Td>
               <Td>
                 <Typography fontWeight="semiBold">
-                  {new Date(form.createdAt).toLocaleString()}
+                  {new Date(row.createdAt).toLocaleString()}
                 </Typography>
               </Td>
               <Td>
-                <Flex gap={2}>
+                <Flex gap={2} justifyContent="flex-end">
                   <IconButton
-                    label='View'
                     withTooltip={false}
-                    onClick={() => navigate(`submission/${form.id}`)}
+                    label="View submission"
+                    onClick={() => navigate(`/plugins/form-manager-plugin/submission/${row.id}`)}
+                    variant="tertiary"
                   >
                     <Eye />
                   </IconButton>
                   <IconButton
-                    label='Delete'
                     withTooltip={false}
-                    onClick={() => handleDelete(form.id)}
+                    label="Delete submission"
+                    onClick={() => handleDelete(row.id)}
+                    variant="danger-light"
                   >
                     <Trash />
                   </IconButton>
@@ -265,6 +246,6 @@ export default function FormSubmission() {
           ))}
         </Tbody>
       </Table>
-    </Box>
+    </>
   );
-};
+}

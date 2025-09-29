@@ -1,63 +1,99 @@
-{
-  "id": 3,
-  "documentId": "pdzujvaq4r7taw6e0yq6ks9y",
-  "formName": "sign-up-form-1",
-  "endpointUrl": "",
-  "oid": "",
-  "retUrl": "",
-  "fieldMappings": {},
-  "fieldConfigs": [
-    {
-      "name": "fullName",
-      "type": "input",
-      "label": "Full Name",
-      "inputType": "text",
-      "validation": {
+[
+  {
+    "label": "1. Thông tin liên lạc ?",
+    "fields": [
+      {
+        "name": "fullName",
+        "label": "Họ và tên",
         "required": true,
-        "minLength": 2
+        "dataFormat": "text"
       },
-      "placeholder": "Nhập họ và tên"
-    },
-    {
-      "name": "email",
-      "type": "input",
-      "label": "Email",
-      "inputType": "email",
-      "validation": {
-        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
-        "required": true
+      {
+        "name": "phone",
+        "label": "Số điện thoại",
+        "required": true,
+        "dataFormat": "phone"
       },
-      "placeholder": "Nhập email"
-    },
-    {
-      "name": "phone",
-      "type": "input",
-      "label": "Phone",
-      "inputType": "tel",
-      "validation": {
-        "regex": "^[0-9]{9,11}$",
-        "required": true
-      },
-      "placeholder": "Nhập số điện thoại"
-    },
-    {
-      "name": "province",
-      "type": "select",
-      "label": "Province",
-      "validation": {
-        "required": true
-      },
-      "optionSource": {
-        "url": "/api/provinces",
-        "type": "api",
-        "labelField": "name",
-        "valueField": "code"
+      {
+        "name": "email",
+        "label": "Email",
+        "required": true,
+        "dataFormat": "email"
       }
-    }
-  ],
-  "active": true,
-  "createdAt": "2025-09-23T03:41:28.316Z",
-  "updatedAt": "2025-09-23T04:00:15.280Z",
-  "publishedAt": "2025-09-23T03:41:28.311Z",
-  "locale": "vi"
-}
+    ]
+  },
+  {
+    "label": "2. Chi phí ước tính của Quý khách hàng có thể đầu tư là bao nhiêu?",
+    "fields": [
+      {
+        "name": "estimatedCost",
+        "label": "Chi phí ước tính",
+        "required": true,
+        "dataFormat": "currency"
+      }
+    ]
+  },
+  {
+    "name": "hasProperty",
+    "label": "3. Bạn đã có mặt bằng hay chưa có mặt bằng?",
+    "options": [
+      "Đã có",
+      "Chưa có"
+    ],
+    "required": true,
+    "dataFormat": "choice"
+  },
+  {
+    "name": "estimatedArea",
+    "label": "4. Diện tích ước tính của mặt bằng hiện tại?",
+    "options": [
+      "Dưới 40m2",
+      "Từ 40m2 đến 60m2",
+      "Từ 60m2 đến 100m2",
+      "Từ 100m2 đến 200m2",
+      "Trên 200m2",
+      "Không biết rõ diện tích"
+    ],
+    "required": true,
+    "dataFormat": "choice"
+  },
+  {
+    "label": "5. Khu vực dự định muốn mở quán?",
+    "fields": [
+      {
+        "name": "province",
+        "label": "Tỉnh/Thành phố",
+        "dropdown": true,
+        "required": true,
+        "dataFormat": "choice",
+        "optionSource": {
+          "url": "http://localhost:1337/api/provinces?pagination[limit]=999",
+          "labelField": "name"
+        }
+      },
+      {
+        "name": "commune",
+        "label": "Phường/Xã",
+        "dropdown": true,
+        "required": true,
+        "dataFormat": "choice",
+        "optionSource": {
+          "url": "http://localhost:1337/api/communes/active?pagination[limit]=100",
+          "type": "strapi",
+          "filters": {
+            "active": true,
+            "province.name": "{{province}}"
+          },
+          "labelField": "name"
+        },
+        "dependentField": "province"
+      },
+      {
+        "name": "address",
+        "label": "Địa chỉ",
+        "required": true,
+        "dataFormat": "text"
+      }
+    ]
+  }
+]

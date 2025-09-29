@@ -1,18 +1,17 @@
-import { Box, Button, Field, Flex, Grid, IconButton, JSONInput, Link, Main, Switch, Typography } from '@strapi/design-system';
-import { ArrowLeft, Plus, Trash } from '@strapi/icons';
+import { Badge, Box, Button, Field, Flex, Grid, IconButton, Link, Modal, SingleSelect, SingleSelectOption, Switch, Typography } from '@strapi/design-system';
+import { ArrowLeft, Hashtag, Pencil, Plus, Trash } from '@strapi/icons';
 import { useFetchClient } from '@strapi/strapi/admin';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { LocaleSelector } from '../../components/LocaleSelector';
 
 interface SalesforceFormData {
   id?: number;
+  formKey: string;
   formName: string;
   endpointUrl: string;
   oid: string;
   retUrl: string;
-  fieldMappings: Record<string, string>;
-  fieldConfigs: Record<string, any>;
+  fieldConfigs: { [key: string]: any }[];
   active: boolean;
   locale?: string;
   submissions?: any[];
@@ -21,36 +20,22 @@ interface SalesforceFormData {
 }
 
 const CreateSalesforceFormPage = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newFieldKey, setNewFieldKey] = useState('');
-  const [newFieldValue, setNewFieldValue] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editValues, setEditValues] = useState<{ [key: string]: any }>({});
   const [selectedLocale, setSelectedLocale] = useState<string>('');
   const { post } = useFetchClient();
 
   const [formData, setFormData] = useState<SalesforceFormData>({
+    formKey: '',
     formName: '',
     endpointUrl: '',
     oid: '',
     retUrl: '',
-    fieldConfigs: {
-      field_1: {
-        type: 'text',
-        label: 'Field 1',
-        required: true,
-        regex: '/^[a-zA-Z0-9]+$/',
-      },
-      field_2: {
-        type: 'text',
-        label: 'Field 2',
-        required: true,
-      },
-    },
-    fieldMappings: {
-      field_1: 'field_1',
-    },
-    active: true
+    fieldConfigs: [],
+    active: true,
+    locale: selectedLocale
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,87 +43,86 @@ const CreateSalesforceFormPage = () => {
     setLoading(true);
     setError(null);
 
+    // Basic validation
+    if (!formData.formName.trim() || !formData.formKey.trim()) {
+      setError('Form name and key are required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const url = selectedLocale
-        ? `/form-manager-plugin/salesforce-forms?locale=${selectedLocale}`
-        : '/form-manager-plugin/salesforce-forms';
-
-      const response = await post(url, {
-        data: formData
-      });
-
-      console.log('Form created successfully:', response.data);
-      navigate(-1);
-    } catch (err) {
-      console.error('Error creating form:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to create salesforce form'
+      await post(
+        `/form-manager-plugin/salesforce-forms`,
+        { data: formData }
       );
+      alert('Form created successfully');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create salesforce form');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate(-1);
+  const addFieldConfig = () => {
+    setFormData(prev => ({ ...prev, fieldConfigs: [...prev.fieldConfigs, editValues] }));
+    setEditValues({});
+    setShowModal(false);
   };
 
-  const addFieldMapping = () => {
-    if (newFieldKey && newFieldValue) {
-      setFormData(prev => ({
-        ...prev,
-        fieldMappings: {
-          ...prev.fieldMappings,
-          [newFieldKey]: newFieldValue
-        }
-      }));
-      setNewFieldKey('');
-      setNewFieldValue('');
-    }
-  };
-
-  const removeFieldMapping = (key: string) => {
+  const removeFieldConfig = (name: string) => {
     setFormData(prev => {
-      const newMappings = { ...prev.fieldMappings };
-      delete newMappings[key];
+      const newConfigs = [...prev.fieldConfigs.filter((config: any) => config.name !== name)];
       return {
         ...prev,
-        fieldMappings: newMappings
+        fieldConfigs: newConfigs
       };
     });
   };
 
   return (
-    <Main padding={8}>
-      <Box paddingBottom={4} margin={20}>
+    <>
+      <Flex direction="column" alignItems="start" marginBottom={4}>
         <Link
-          href='/admin/plugins/form-manager-plugin'
+          href='/admin/plugins/form-manager-plugin/forms'
           startIcon={<ArrowLeft />}
-          style={{ marginBottom: 16 }}
         >
           <Typography variant="epsilon">Back</Typography>
         </Link>
-        <Flex justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            <Typography variant="alpha">Create New Salesforce Form</Typography>
-            <Box>
-              <Typography variant="epsilon">Configure a new Salesforce form handler</Typography>
-            </Box>
-          </Box>
+        <Flex justifyContent={'space-between'} alignItems="center" width={'100%'}>
+          <Typography variant="alpha" textColor="neutral800">
+            Create an entry
+          </Typography>
           <LocaleSelector
             onLocaleChange={setSelectedLocale}
             currentLocale={selectedLocale}
           />
         </Flex>
-      </Box>
-      <form onSubmit={handleSubmit}>
-        <Flex gap={4} alignItems="flex-start">
-          <Box padding={4} style={{ backgroundColor: 'white', flex: 1 }}>
+      </Flex>
+      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <Flex gap={6} alignItems="flex-start" justifyContent="center">
+          <Box
+            background="neutral0"
+            padding={6}
+            borderRadius="4px"
+            style={{
+              border: '1px solid #e5e5e5',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              flex: 1
+            }}
+          >
             {error && (
-              <Box paddingBottom={4}>
-                <Typography textColor="danger600">Error: {error}</Typography>
+              <Box
+                padding={4}
+                background="danger100"
+                borderRadius="4px"
+                style={{
+                  border: '1px solid #f56565',
+                  marginBottom: 16
+                }}
+              >
+                <Typography textColor="danger600" fontWeight="semiBold">
+                  Error: {error}
+                </Typography>
               </Box>
             )}
             <Grid.Root gap={4} gridCols={12}>
@@ -149,7 +133,18 @@ const CreateSalesforceFormPage = () => {
                 </Typography>
               </Grid.Item>
 
-              <Grid.Item col={5}>
+              <Grid.Item col={6}>
+                <Field.Root name="formKey" required style={{ width: '100%' }}>
+                  <Field.Label>Form Key</Field.Label>
+                  <Field.Input
+                    value={formData.formKey}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, formKey: e.target.value }))}
+                    placeholder="e.g., sign-up-form"
+                  />
+                </Field.Root>
+              </Grid.Item>
+
+              <Grid.Item col={6}>
                 <Field.Root name="formName" required style={{ width: '100%' }}>
                   <Field.Label>Form Name</Field.Label>
                   <Field.Input
@@ -160,7 +155,7 @@ const CreateSalesforceFormPage = () => {
                 </Field.Root>
               </Grid.Item>
 
-              <Grid.Item col={5}>
+              <Grid.Item col={6}>
                 <Field.Root name="active" style={{ width: '100%' }}>
                   <Field.Label>Active</Field.Label>
                   <Switch
@@ -190,7 +185,7 @@ const CreateSalesforceFormPage = () => {
                 </Field.Root>
               </Grid.Item>
 
-              <Grid.Item col={5}>
+              <Grid.Item col={6}>
                 <Field.Root name="oid" style={{ width: '100%' }}>
                   <Field.Label>Organization ID (OID)</Field.Label>
                   <Field.Input
@@ -201,7 +196,7 @@ const CreateSalesforceFormPage = () => {
                 </Field.Root>
               </Grid.Item>
 
-              <Grid.Item col={5}>
+              <Grid.Item col={6}>
                 <Field.Root name="retUrl" style={{ width: '100%' }}>
                   <Field.Label>Return URL</Field.Label>
                   <Field.Input
@@ -213,142 +208,276 @@ const CreateSalesforceFormPage = () => {
               </Grid.Item>
 
               {/* Field Mappings */}
-              <Grid.Item col={12}>
-                <Flex direction="column" gap={2} alignItems={'flex-start'}>
-                  <Typography variant="beta">
-                    Field Mappings
-                  </Typography>
-                  <Typography variant="pi" textColor="neutral600">
-                    Map your form fields to Salesforce fields
-                  </Typography>
+              <Grid.Item col={12} marginTop={3}>
+                <Flex justifyContent={'space-between'} alignItems={'end'} style={{ width: '100%' }}>
+                  <Flex direction="column" alignItems={'flex-start'}>
+                    <Typography variant="beta">
+                      Field Mappings
+                    </Typography>
+                    <Typography variant="pi" textColor="neutral600">
+                      Map your form fields to Salesforce fields
+                    </Typography>
+                  </Flex>
+                  <Button
+                    type='button'
+                    size='S'
+                    startIcon={<Plus />}
+                    onClick={() => setShowModal(true)}
+                  >
+                    Add Field
+                  </Button>
                 </Flex>
               </Grid.Item>
 
-              {Object.entries(formData.fieldMappings).map(([key, value]) => (
-                <Grid.Item col={12} key={key}>
-                  <Grid.Root gap={2} gridCols={12} style={{ width: '100%' }}>
-                    <Grid.Item col={5}>
-                      <Field.Root name="formFieldName" style={{ width: '100%' }}>
-                        <Field.Label>Form field name</Field.Label>
-                        <Field.Input
-                          value={key}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const newMappings = { ...formData.fieldMappings };
-                            delete newMappings[key];
-                            newMappings[e.target.value] = value;
-                            setFormData(prev => ({ ...prev, fieldMappings: newMappings }));
-                          }}
-                          placeholder="Form field name"
-                        />
-                      </Field.Root>
-                    </Grid.Item>
-                    <Grid.Item col={5}>
-                      <Field.Root name="salesforceFieldName" style={{ width: '100%' }}>
-                        <Field.Label>Salesforce field name</Field.Label>
-                        <Field.Input
-                          value={value}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const newMappings = { ...formData.fieldMappings };
-                            delete newMappings[key];
-                            newMappings[key] = e.target.value;
-                            setFormData(prev => ({ ...prev, fieldMappings: newMappings }));
-                          }}
-                          placeholder="Salesforce field name"
-                        />
-                      </Field.Root>
-                    </Grid.Item>
-                    <Grid.Item col={2} paddingTop={5}>
-                      <IconButton
-                        withTooltip={false}
-                        label='Remove field mapping'
-                        onClick={() => removeFieldMapping(key)}
-                        variant='danger'
-                      >
-                        <Trash />
-                      </IconButton>
-                    </Grid.Item>
-                  </Grid.Root>
+              {formData.fieldConfigs.map((value: any, index: number) => (
+                <Grid.Item col={12} key={index}>
+                  <FieldCard
+                    {...value}
+                    onEdit={() => {
+                      setEditValues(value)
+                      setShowModal(true)
+                    }}
+                    onRemove={() => removeFieldConfig(value.name)}
+                  />
                 </Grid.Item>
               ))}
 
-              {/* Add New Field Mapping */}
+            </Grid.Root>
+          </Box>
+          <Box
+            background="neutral0"
+            padding={6}
+            borderRadius="4px"
+            style={{
+              border: '1px solid #e5e5e5',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              width: '300px'
+            }}
+          >
+            <Flex alignItems={'start'} direction="column" gap={2}>
+              <Typography variant="beta" textColor="neutral800">
+                Actions
+              </Typography>
+              <Button
+                type="submit"
+                loading={loading}
+                disabled={loading}
+                fullWidth
+              >
+                Save
+              </Button>
+            </Flex>
+          </Box>
+        </Flex>
+      </form>
+      <Modal.Root open={showModal} onOpenChange={setShowModal}>
+        <Modal.Content>
+          <Modal.Header>
+            <Modal.Title>Add Advanced Field Mapping</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Grid.Root gap={4} gridCols={12}>
+              <Grid.Item col={6}>
+                <Field.Root name="formField" required style={{ width: '100%' }}>
+                  <Field.Label>Form Field</Field.Label>
+                  <Field.Input
+                    value={editValues?.name}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEditValues(prev => ({ ...prev, formField: e.target.value }))
+                    }}
+                  />
+                </Field.Root>
+              </Grid.Item>
+              <Grid.Item col={6}>
+                <Field.Root name="salesforceField" required style={{ width: '100%' }}>
+                  <Field.Label>Salesforce Field</Field.Label>
+                  <Field.Input
+                    value={editValues?.salesforceField}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEditValues(prev => ({ ...prev, salesforceField: e.target.value }))
+                    }}
+                  />
+                </Field.Root>
+              </Grid.Item>
+              <Grid.Item col={6}>
+                <Field.Root name="dataFormat" required style={{ width: '100%' }}>
+                  <Field.Label>Data Format</Field.Label>
+                  <SingleSelect
+                    value={editValues?.dataFormat}
+                    onChange={(value) => {
+                      setEditValues(prev => ({ ...prev, dataFormat: value }))
+                      if (editValues && editValues.dataFormat === 'choice') {
+                        editValues['options'] = ['']
+                      } else {
+                        let temp = { ...editValues };
+                        delete temp['options'];
+                        setEditValues(temp);
+                      }
+                    }}
+                  >
+                    <SingleSelectOption value="text">Text</SingleSelectOption>
+                    <SingleSelectOption value="number">Number</SingleSelectOption>
+                    <SingleSelectOption value="email">Email</SingleSelectOption>
+                    <SingleSelectOption value="phone">Phone</SingleSelectOption>
+                    <SingleSelectOption value="date">Date</SingleSelectOption>
+                    <SingleSelectOption value="choice">Choice</SingleSelectOption>
+                    <SingleSelectOption value="currency">Currency</SingleSelectOption>
+                  </SingleSelect>
+                </Field.Root>
+              </Grid.Item>
+              <Grid.Item col={6}>
+                <Field.Root name="dependentField" required style={{ width: '100%' }}>
+                  <Field.Label>Dependent Field</Field.Label>
+                  <Field.Input
+                    value={editValues?.dependentField}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEditValues(prev => ({ ...prev, dependentField: e.target.value }))
+                    }}
+                  />
+                </Field.Root>
+              </Grid.Item>
               <Grid.Item col={12}>
-                <Box style={{ width: '100%' }}>
-                  <Typography variant="pi" textColor="neutral600" marginBottom={4}>
-                    Add new field mapping:
-                  </Typography>
-                  <Grid.Root gap={2} gridCols={12} style={{ width: '100%' }}>
-                    <Grid.Item col={5}>
-                      <Field.Root name="formFieldName" style={{ width: '100%' }}>
-                        <Field.Label>Form field name</Field.Label>
+                <Field.Label>Options</Field.Label>
+                {editValues?.dataFormat === 'choice'
+                  && Array.isArray(editValues?.options)
+                  && editValues?.options.map((op, index) => (
+                    <Flex key={op} gap={2} alignItems={'center'}>
+                      <Field.Root name="option" required style={{ width: '100%' }}>
                         <Field.Input
-                          value={newFieldKey}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFieldKey(e.target.value)}
-                          placeholder="Form field name"
+                          value={op}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setEditValues(prev => ({
+                              ...prev,
+                              options: prev.options.map((o: string, index: number) => index === op ? e.target.value : o)
+                            }))
+                          }}
                         />
                       </Field.Root>
-                    </Grid.Item>
-                    <Grid.Item col={5}>
-                      <Field.Root name="salesforceFieldName" style={{ width: '100%' }}>
-                        <Field.Label>Salesforce field name</Field.Label>
-                        <Field.Input
-                          value={newFieldValue}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFieldValue(e.target.value)}
-                          placeholder="Salesforce field name"
-                        />
-                      </Field.Root>
-                    </Grid.Item>
-                    <Grid.Item col={2} paddingTop={5}>
                       <IconButton
                         withTooltip={false}
-                        label='Add field mapping'
-                        onClick={addFieldMapping}
-                        disabled={!newFieldKey || !newFieldValue}
-                        variant='success'
+                        type='button'
+                        label="Add option"
+                        onClick={() => setEditValues(prev => ({
+                          ...prev,
+                          options: [...prev.options, editValues?.options[index]]
+                        }))}
                       >
                         <Plus />
                       </IconButton>
-                    </Grid.Item>
-                  </Grid.Root>
-                </Box>
+                    </Flex>
+                  ))}
               </Grid.Item>
-
-              <Grid.Item col={12} marginTop={3}>
-                <Typography variant="beta">
-                  Field Configuration
-                </Typography>
-              </Grid.Item>
-
               <Grid.Item col={12}>
-                <Field.Root id="with_field" style={{ width: '100%' }}>
-                  <Field.Label>Field Configuration</Field.Label>
-                  <JSONInput
-                    aria-label="JSON"
-                    width="100%"
-                    minHeight="235px"
-                    value={JSON.stringify(formData.fieldConfigs, null, 2)}
-                    onChange={(value: any) => setFormData(prev => ({ ...prev, fieldConfigs: JSON.parse(value) }))}
+                <Flex alignItems={'center'} gap={2}>
+                  <Switch
+                    checked={editValues?.required}
+                    onCheckedChange={(checked) => {
+                      setEditValues({
+                        ...editValues,
+                        required: checked
+                      })
+                    }}
                   />
-                  <Field.Error />
-                  <Field.Hint />
-                </Field.Root>
+                  <Typography variant="sigma" textColor="neutral600">Required</Typography>
+                </Flex>
               </Grid.Item>
             </Grid.Root>
-          </Box>
-          <Flex padding={4} style={{ backgroundColor: 'white', width: '300px', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
-            <Typography variant="delta">Entry</Typography>
-            <Button
-              type="submit"
-              loading={loading}
-              disabled={loading}
-              fullWidth
-            >
-              Save
-            </Button>
-          </Flex>
+          </Modal.Body>
+          <Modal.Footer justifyContent={'flex-end'} gap={2}>
+            <Modal.Close>
+              <Button variant="tertiary" type='button'>Cancel</Button>
+            </Modal.Close>
+            <Button onClick={addFieldConfig} type='button'>Confirm</Button>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal.Root>
+    </>
+  );
+};
+
+const types = {
+  'text': { icon: <Hashtag />, color: 'neutral' },
+  'number': { icon: <Hashtag />, color: 'secondary' },
+  'email': { icon: <Hashtag />, color: 'alternative' },
+  'phone': { icon: <Hashtag />, color: 'success' },
+  'date': { icon: <Hashtag />, color: 'warning' },
+  'choice': { icon: <Hashtag />, color: 'danger' },
+  'currency': { icon: <Hashtag />, color: 'primary' },
+};
+
+interface FieldCardProps {
+  name: string;
+  label: string;
+  dataFormat: keyof typeof types;
+  required: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+  options?: string[];
+}
+
+const FieldCard = ({ name, label, required, dataFormat, onEdit, onRemove, options }: FieldCardProps) => {
+  return (
+    <Flex
+      justifyContent={'space-between'}
+      alignItems={'start'}
+      paddingBottom={2}
+      style={{
+        border: '1px solid #e5e5e5',
+        borderRadius: '4px',
+        width: '100%',
+        padding: '16px 12px'
+      }}
+    >
+      <Flex direction="column" gap={2} alignItems={'flex-start'}>
+        <Flex alignItems={'center'} gap={2}>
+          <Hashtag />
+          <Typography variant="sigma" color={'neutral800'}>{name}</Typography>
+          <Badge
+            size='S'
+            backgroundColor={types[dataFormat].color + '100'}
+            textColor={types[dataFormat].color + '600'}
+          >
+            {dataFormat}
+          </Badge>
+          {required && <Badge size='S' backgroundColor='danger600' textColor='white'>Required</Badge>}
         </Flex>
-      </form>
-    </Main>
+        <Typography variant="pi" textColor={'neutral600'}>{label}</Typography>
+        {Array.isArray(options)
+          && options.length > 0
+          && <Flex gap={2} alignItems={'center'}>
+            <Typography variant="pi" textColor={'neutral600'}>Options:</Typography>
+            {options.map((option: string, index: number) => (
+              <Badge
+                size='S'
+                backgroundColor={'neutral100'}
+                textColor={'neutral600'}
+              >
+                {option}
+              </Badge>
+            ))}
+          </Flex>}
+      </Flex>
+      <Flex gap={2} justifyContent="flex-end">
+        <IconButton
+          withTooltip={false}
+          type='button'
+          label="Edit form"
+          onClick={onEdit}
+          variant="tertiary"
+        >
+          <Pencil />
+        </IconButton>
+        <IconButton
+          withTooltip={false}
+          type='button'
+          label="Delete form"
+          onClick={onRemove}
+          variant="danger-light"
+        >
+          <Trash />
+        </IconButton>
+      </Flex>
+    </Flex>
   );
 };
 

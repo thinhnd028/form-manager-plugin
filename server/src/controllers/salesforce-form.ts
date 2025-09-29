@@ -1,6 +1,51 @@
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('plugin::form-manager-plugin.salesforce-form', ({ strapi }) => ({
+  // Override create method to add locale validation
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+
+      // Validate formName uniqueness within the same locale
+      if (data.formName) {
+        const existingForms = await strapi.entityService.findMany('plugin::form-manager-plugin.salesforce-form', {
+          filters: {
+            formName: data.formName,
+            locale: data.locale
+          }
+        });
+
+        if (existingForms.length > 0) {
+          return ctx.badRequest({
+            message: `Form name "${data.formName}" already exists in locale "${data.locale}"`
+          });
+        }
+      }
+
+      // Call the service method
+      return await strapi.service('plugin::form-manager-plugin.salesforce-form').create(data, { locale: data.locale });
+    } catch (error) {
+      console.error('Error creating salesforce form:', error);
+      ctx.throw(500, 'Failed to create salesforce form');
+    }
+  },
+
+  // Override update method to add locale validation
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      const locale = data.locale;
+
+      delete data.locale;
+
+      // Call the service method
+      return await strapi.service('plugin::form-manager-plugin.salesforce-form').update(id, data, { locale: locale });
+    } catch (error) {
+      console.error('Error updating salesforce form:', error);
+      ctx.throw(500, 'Failed to update salesforce form');
+    }
+  },
   // Custom methods for additional functionality
   async findActive(ctx) {
     try {

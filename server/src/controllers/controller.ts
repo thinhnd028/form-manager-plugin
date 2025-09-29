@@ -11,8 +11,13 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async getSalesforceForms(ctx) {
     try {
-      const forms = await strapi.db.query('plugin::form-manager-plugin.salesforce-form').findMany();
-      
+      const { locale } = ctx.query;
+      const forms = await strapi.db.query('plugin::form-manager-plugin.salesforce-form').findMany({
+        where: {
+          locale: locale
+        }
+      });
+
       ctx.body = {
         data: forms,
         meta: {
@@ -50,7 +55,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
   async createSalesforceForm(ctx) {
     try {
       const { data } = ctx.request.body;
-      
+
       const form = await strapi.db.query('plugin::form-manager-plugin.salesforce-form').create({
         data: {
           ...data
@@ -120,7 +125,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           form: true
         }
       });
-  
+
       ctx.body = {
         data: submissions,
         meta: { total: submissions.length }
@@ -140,7 +145,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           form: true
         }
       });
-  
+
       if (!submission) {
         return ctx.notFound('Form submission not found');
       }
@@ -167,7 +172,46 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       console.error('Error creating form submission:', error);
       ctx.throw(500, 'Failed to create form submission');
     }
-  }
+  },
+
+  async updateFormSubmission(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+
+      const submission = await strapi.db.query('plugin::form-manager-plugin.form-submission').update({
+        where: { id: parseInt(id) },
+        data
+      });
+
+      if (!submission) {
+        return ctx.notFound('Form submission not found');
+      }
+
+      ctx.body = { data: submission };
+    } catch (error) {
+      console.error('Error updating form submission:', error);
+      ctx.throw(500, 'Failed to update form submission');
+    }
+  },
+
+  async deleteFormSubmission(ctx) {
+    try {
+      const { id } = ctx.params;
+      const submission = await strapi.db.query('plugin::form-manager-plugin.form-submission').delete({
+        where: { id: parseInt(id) }
+      });
+
+      if (!submission) {
+        return ctx.notFound('Form submission not found');
+      }
+
+      ctx.body = { data: submission };
+    } catch (error) {
+      console.error('Error deleting form submission:', error);
+      ctx.throw(500, 'Failed to delete form submission');
+    }
+  },
 });
 
 export default controller;
